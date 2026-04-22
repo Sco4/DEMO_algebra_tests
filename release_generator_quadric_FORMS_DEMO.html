@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algebra 1 Test Generator: Pro Edition</title>
+    <style>
+        /* =========================================
+           UI: CONTROL PANEL
+           ========================================= */
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.9);
+            --primary: #3b82f6;
+            --accent: #fbbf24;
+            --text: #f8fafc;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        #control-panel {
+            width: 410px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(15px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            box-sizing: border-box;
+            height: 100vh;
+            overflow-y: auto;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 100;
+        }
+
+        #print-preview-area {
+            margin-left: 410px;
+            padding: 20px;
+            width: calc(100% - 410px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #cbd5e1;
+        }
+
+        h2 {
+            color: var(--accent);
+            margin-top: 0;
+            font-size: 1.6rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        h3 {
+            font-size: 1rem;
+            color: #94a3b8;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+            margin-top: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        select,
+        input[type="number"],
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #475569;
+            border-radius: 6px;
+            color: white;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        .radio-group label {
+            font-weight: normal;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .task-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            border-radius: 6px;
+            transition: opacity 0.2s;
+            position: relative; /* Важливо для Tooltip */
+        }
+
+        .task-row input[type="checkbox"] {
+            width: auto;
+            transform: scale(1.2);
+            flex-shrink: 0;
+        }
+
+        .task-row input[type="number"] {
+            width: 45px;
+            padding: 4px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .task-name {
+            flex-grow: 1;
+            line-height: 1.2;
+            font-weight: 500;
+        }
+
+        .task-format-select {
+            width: 65px;
+            padding: 2px;
+            font-size: 0.75rem;
+            display: none;
+            background: #334155;
+            color: white;
+            border: 1px solid #475569;
+            border-radius: 4px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: 0.2s;
+        }
+
+        .btn-generate {
+            background: var(--primary);
+            color: white;
+            margin-top: 10px;
+        }
+
+        .btn-print {
+            background: #10b981;
+            color: white;
+        }
+
+        /* =========================================
+           PRINT RENDERING
+           ========================================= */
+        #print-container {
+            display: none;
+            width: 100%;
+            max-width: 8.5in;
+        }
+
+        .test-page {
+            box-sizing: border-box;
+            background: white;
+            color: black;
+            font-family: "Times New Roman", serif;
+            margin: 0 auto 40px auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid black;
+            padding-bottom: 15px;
+            margin-bottom: 5px;
+        }
+
+        .header-lines {
+            line-height: 2.2;
+            font-size: 12pt;
+            flex: 1;
+        }
+
+        .header-meta {
+            text-align: center;
+            font-size: 10pt;
+            color: #555;
+            font-family: monospace;
+            line-height: 1.6;
+            padding: 0 15px;
+            flex: 1;
+            margin-top: 5px;
+        }
+
+        .header-score {
+            font-size: 13pt;
+            font-weight: bold;
+            border: 2px solid black;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 100px;
+        }
+
+        .test-title {
+            text-align: center;
+            font-size: 16pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .ak-title {
+            color: #dc2626;
+            border-bottom: 3px double #dc2626;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tasks-container {
+            display: grid;
+            gap: 16px;
+            flex-grow: 1;
+            align-content: start;
+        }
+
+        .layout-compact {
+            grid-template-columns: 1fr 1fr;
+            column-gap: 30px;
+        }
+
+        .layout-workspace {
+            grid-template-columns: 1fr;
+        }
+
+        .task-item {
+            font-size: 11pt;
+            line-height: 1.25;
+            padding: 8px 0;
+        }
+
+        .math-eq {
+            font-style: italic;
+            font-size: 13pt;
+            font-weight: bold;
+            white-space: nowrap;
+            display: inline-block;
+            margin: 0 4px;
+        }
+
+        .frac {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            vertical-align: middle;
+            text-align: center;
+            font-size: 0.9em;
+            line-height: 0.9;
+            margin: 0 2px;
+        }
+
+        .frac .num {
+            border-bottom: 1.5px solid currentColor;
+            padding: 0 2px;
+            width: 100%;
+        }
+
+        .frac .den {
+            padding: 0 2px;
+        }
+
+        .mcq-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 20px;
+            margin-top: 8px;
+        }
+
+        .mcq-option {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+
+        .grid-svg {
+            display: block;
+            margin: 10px auto;
+            width: 120px !important;
+            height: 120px !important;
+        }
+
+        .ak-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11pt;
+            margin-top: 10px;
+        }
+
+        .ak-table th,
+        .ak-table td {
+            border: 1px solid #000;
+            padding: 8px 4px;
+            text-align: center;
+        }
+
+        .ak-table th {
+            background: #f1f5f9;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .ak-table td {
+            color: #dc2626;
+            font-weight: bold;
+        }
+
+        @media print {
+            @page {
+                margin: 0 !important;
+            }
+
+            html,
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            #control-panel {
+                display: none !important;
+            }
+
+            #print-preview-area {
+                margin: 0;
+                padding: 0;
+                background: none;
+                width: 100%;
+            }
+
+            #print-container {
+                display: block;
+                width: 100%;
+                box-shadow: none;
+            }
+
+            .test-page {
+                margin: 0 !important;
+                page-break-after: always;
+                page-break-inside: avoid;
+                overflow: hidden !important;
+            }
+
+            .test-page.paper-letter {
+                width: 8.5in !important;
+                height: 11in !important;
+                max-height: 11in !important;
+                padding: 0.25in 0.5in 0.4in 0.5in !important;
+            }
+
+            .test-page.paper-a4 {
+                width: 210mm !important;
+                height: 297mm !important;
+                max-height: 297mm !important;
+               padding: 6mm 15mm 10mm 15mm !important;
+            }
+        }
+
+        /* =========================================
+           TOOLTIPS & EXTRAS
+           ========================================= */
+        .info-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            background: #475569;
+            color: white;
+            border-radius: 50%;
+            font-size: 10px;
+            cursor: help;
+            margin-left: 6px;
+            vertical-align: middle;
+            position: relative;
+        }
+
+        .info-icon:hover::after {
+            content: attr(data-tip);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: #f8fafc;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: normal;
+            width: 240px;
+            white-space: pre-line;
+            z-index: 9999;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
+            border: 1px solid #3b82f6;
+            text-align: left;
+            line-height: 1.4;
+        }
+
+        .info-icon:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 8px;
+            border-style: solid;
+            border-color: #3b82f6 transparent transparent transparent;
+            z-index: 9999;
+        }
+
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+            padding-right: 25px !important;
+            transition: 0.2s;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='20' viewBox='0 0 10 20'%3E%3Cpolyline points='2,7 5,4 8,7' fill='none' stroke='%2394a3b8' stroke-width='1.5'/%3E%3Cpolyline points='2,13 5,16 8,13' fill='none' stroke='%2394a3b8' stroke-width='1.5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 10px 20px;
+        }
+
+        input[type="number"]:focus {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='20' viewBox='0 0 10 20'%3E%3Cpolyline points='2,7 5,4 8,7' fill='none' stroke='%233b82f6' stroke-width='1.5'/%3E%3Cpolyline points='2,13 5,16 8,13' fill='none' stroke='%233b82f6' stroke-width='1.5'/%3E%3C/svg%3E");
+            border-color: #3b82f6;
+            outline: none;
+        }
+
+        input[type="number"].arrows-active {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='20' viewBox='0 0 10 20'%3E%3Cpolyline points='2,7 5,4 8,7' fill='none' stroke='%233b82f6' stroke-width='2'/%3E%3Cpolyline points='2,13 5,16 8,13' fill='none' stroke='%233b82f6' stroke-width='2'/%3E%3C/svg%3E");
+        }
+
+        .btn-print.error-hint::after {
+            content: attr(data-err-msg);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ef4444;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-print.error-hint::before {
+            content: '';
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: #ef4444 transparent transparent transparent;
+        }
+
+        .task-row.inactive input[type="number"],
+        .task-row.inactive .task-name,
+        .task-row.inactive .task-format-select {
+            opacity: 0.4;
+            transition: opacity 0.2s;
+        }
+
+        input[type="checkbox"],
+        input[type="radio"],
+        label {
+            cursor: pointer;
+        }
+
+        .gen-summary {
+            display: none;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid #10b981;
+            color: #a7f3d0;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            text-align: center;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* =========================================
+           SETTINGS MODAL & GEAR ICON
+           ========================================= */
+        #btn-settings {
+            float: right;
+            cursor: pointer;
+            font-size: 1.4rem;
+            transition: transform 0.4s ease;
+            color: #94a3b8;
+        }
+
+        #btn-settings:hover {
+            transform: rotate(90deg);
+            color: white;
+        }
+
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .modal-backdrop.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--panel-bg);
+            border: 1px solid #475569;
+            border-radius: 12px;
+            padding: 25px;
+            width: 340px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.8rem;
+            cursor: pointer;
+            transition: 0.2s;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .close-btn:hover {
+            color: #ef4444;
+        }
+
+        .test-page.paper-letter {
+            width: 8.5in;
+            height: 11in;
+            padding: 0.5in;
+        }
+
+        .test-page.paper-a4 {
+            width: 210mm;
+            height: 297mm;
+            padding: 15mm;
+        }
+
+        /* --- ЛЕЙАУТ ДЛЯ ГРАФІКІВ MCQ (Пліч-о-пліч) --- */
+        .graph-mcq-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 20px;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .graph-mcq-wrapper .svg-container {
+            flex: 0 0 auto;
+        }
+
+        .graph-mcq-wrapper .mcq-options-vertical {
+            flex: 0 0 auto; 
+            min-width: 120px;
+        }
+
+        .graph-mcq-wrapper .mcq-options-vertical .mcq-grid {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 15px !important;
+        }
+
+        /* =========================================
+           PRO TOOLTIP (Microinteraction)
+           ========================================= */
+        .task-row.show-pro-tip::after {
+            content: attr(data-pro-tip);
+            position: absolute;
+            bottom: 110%;
+            left: 50px;
+            background: var(--accent);
+            color: #000;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            white-space: nowrap;
+            z-index: 1000;
+            animation: bounceTip 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            pointer-events: none;
+            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+        }
+
+        .task-row.show-pro-tip::before {
+            content: '';
+            position: absolute;
+            bottom: 80%;
+            left: 70px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: var(--accent) transparent transparent transparent;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        @keyframes bounceTip {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+
+<body>
+
+    <aside id="control-panel">
+        <h2><span data-i18n="app-title">📐 Algebra 1 Pro</span> <span id="btn-settings" title="Settings">⚙️</span></h2>
+
+        <div class="form-group">
+            <label><span data-i18n="lbl-school">School Name (Class name):</span> <span class="info-icon"
+                    data-i18n-tip="tip-school"
+                    data-tip="Appears at the top of every student's test page.">i</span></label>
+            <input type="text" id="school-name" data-i18n-placeholder="ph-school" placeholder="Enter school name...">
+        </div>
+
+        <div class="form-group">
+            <label><span data-i18n="lbl-format">Question Format:</span><span class="info-icon"
+                    data-i18n-tip="tip-format"
+                    data-tip="MCQ: Multiple choice with distractors.&#10;FRQ: Students solve on their own.&#10;Mixed: Individual choice per task.">i</span></label>
+            <div class="radio-group">
+                <label><input type="radio" name="q-format" value="mcq" checked> MCQ</label>
+                <label><input type="radio" name="q-format" value="frq"> FRQ</label>
+                <label><input type="radio" name="q-format" value="mixed"> <span
+                        data-i18n="lbl-mixed">Mixed</span></label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label><span data-i18n="lbl-layout">Layout & Batch Settings:</span> <span class="info-icon"
+                    data-i18n-tip="tip-layout"
+                    data-tip="Compact: 2 columns to save paper.&#10;Workspace: 1 column with dedicated area for student steps.">i</span></label>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <select id="layout-mode">
+                    <option value="layout-compact" data-i18n="opt-compact">Compact Mode</option>
+                    <option value="layout-workspace" data-i18n="opt-workspace">Workspace Mode</option>
+                </select>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label style="margin-top: 5px;"><span data-i18n="lbl-variants">Number of Variants:</span>
+                        <span class="info-icon" data-i18n-tip="tip-variants"
+                            data-tip="Generates multiple unique versions of the test (50 max).">i</span>
+                    </label>
+                    <input type="number" id="variants-count" value="1" min="1" max="50" style="width: 100%;">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal;">
+                <input type="checkbox" id="shuffle-questions"> <span data-i18n="lbl-shuffle">Shuffle Questions</span>
+                <span class="info-icon" data-i18n-tip="tip-shuffle"
+                    data-tip="Randomizes the order of questions for each variant to prevent cheating.">i</span>
+            </label>
+        </div>
+
+        <div
+            style="display: flex; align-items: center; justify-content: space-between; margin-top: 25px; padding-bottom: 10px; border-bottom: 1px dashed rgba(255,255,255,0.2);">
+            <h3 style="margin: 0; border: none; padding: 0;" data-i18n="lbl-builder">Quadratic Functions Builder</h3>
+            <label
+                style="font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 5px; color: var(--accent); font-weight: normal;">
+                <input type="checkbox" id="toggle-all-tasks"> <span data-i18n="lbl-selectall">Select All</span>
+            </label>
+        </div>
+
+        <div id="task-list"></div>
+        <div id="generation-summary" class="gen-summary"></div>
+
+        <button class="btn btn-generate" onclick="generateTest()" data-i18n="btn-gen">Generate Test & Key</button>
+
+        <button class="btn btn-print" onclick="handlePrint(this)" style="position: relative;">
+            <span data-i18n="btn-print">Print Document</span>
+            <span class="info-icon" data-i18n-tip="tip-print"
+                data-tip="PRO TIP: In the print settings, uncheck 'Headers and Footers' for a clean look.">i</span>
+        </button>
+    </aside>
+
+    <main id="print-preview-area">
+        <div id="print-container"></div>
+    </main>
+
+    <div id="settings-modal" class="modal-backdrop">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="margin:0; border:none; padding:0; color:var(--accent);" data-i18n="set-title">⚙️ Settings
+                </h3>
+                <button id="btn-close-settings" class="close-btn">&times;</button>
+            </div>
+
+            <div class="form-group">
+                <label data-i18n="set-lang">🌐 Language / Мова</label>
+                <select id="lang-select">
+                    <option value="en">English</option>
+                    <option value="uk">Українська</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label data-i18n="set-paper">📄 Paper Format / Формат паперу</label>
+                <select id="paper-select">
+                    <option value="letter" data-i18n="opt-letter">US Letter (8.5" x 11")</option>
+                    <option value="a4" data-i18n="opt-a4">A4 (210mm x 297mm)</option>
+                </select>
+            </div>
+            <button id="btn-apply-settings" class="btn btn-generate" style="margin-top: 10px; margin-bottom: 0;"
+                data-i18n="btn-apply">Apply & Close</button>
+        </div>
+    </div>
+
+    <script>
+        // =========================================
+        // PAYWALL WEB COMPONENT (DEMO MODE)
+        // =========================================
+        const paywallTemplate = document.createElement('template');
+        paywallTemplate.innerHTML = `
+          <style>
+            :host { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; }
+            :host([active]) { display: flex; align-items: center; justify-content: center; }
+            .backdrop { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: fadeIn 0.3s ease; }
+            .modal { position: relative; background: #1e293b; border: 1px solid #3b82f6; border-radius: 24px; padding: 2.5rem; max-width: 420px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); transform: translateY(20px); animation: slideUp 0.3s ease forwards; color: #f8fafc; font-family: system-ui, sans-serif; }
+            h2 { margin-top: 0; color: #fbbf24; font-size: 1.6rem; }
+            p { color: #cbd5e1; line-height: 1.5; margin-bottom: 1.5rem; }
+            .qr-placeholder { width: 160px; height: 160px; margin: 0 auto 1.5rem; background: white; border-radius: 12px; padding: 10px; display: flex; align-items: center; justify-content: center; border: 4px solid #3b82f6; }
+            .btn-buy { display: block; width: 100%; padding: 1rem; background: #3b82f6; color: white; text-decoration: none; font-weight: bold; border-radius: 8px; transition: 0.2s; box-sizing: border-box; }
+            .btn-buy:hover { background: #2563eb; }
+            .btn-close { background: none; border: none; color: #94a3b8; margin-top: 1.2rem; cursor: pointer; font-size: 0.9rem; text-decoration: underline; }
+            .btn-close:hover { color: #f8fafc; }
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes slideUp { to { transform: translateY(0); } }
+          </style>
+          <div class="backdrop" id="backdrop"></div>
+          <div class="modal">
+            <h2>🔥 Чудова робота!</h2>
+            <p>Це демо-версія генератора. Придбайте PRO, щоб <b>генерувати до 50 унікальних варіантів одночасно</b> та розблокувати <b>функцію друку</b> у PDF для ваших учнів.</p>
+            <div class="qr-placeholder">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://your-domain.com/buy" alt="QR Code" width="100%">
+            </div>
+            <a href="#" class="btn-buy" id="buy-link" target="_blank">Отримати PRO версію</a>
+            <button class="btn-close" id="close-btn">Повернутись до прев'ю</button>
+          </div>
+        `;
+
+        class PaywallModal extends HTMLElement {
+            constructor() {
+                super();
+                this.attachShadow({ mode: 'open' });
+                this.shadowRoot.appendChild(paywallTemplate.content.cloneNode(true));
+            }
+            connectedCallback() {
+                this.shadowRoot.getElementById('close-btn').addEventListener('click', () => this.close());
+                this.shadowRoot.getElementById('backdrop').addEventListener('click', () => this.close());
+                this.shadowRoot.getElementById('buy-link').href = this.getAttribute('buy-url') || '#';
+            }
+            updateText(title, body, btn, close) {
+                this.shadowRoot.querySelector('h2').textContent = title;
+                this.shadowRoot.querySelector('p').innerHTML = body;
+                this.shadowRoot.querySelector('#buy-link').textContent = btn;
+                this.shadowRoot.querySelector('#close-btn').textContent = close;
+            }
+            open() { this.setAttribute('active', ''); }
+            close() { this.removeAttribute('active'); }
+        }
+        customElements.define('edtech-paywall', PaywallModal);
+
+        // =========================================
+        // GLOBAL STATE
+        // =========================================
+        let isGenerated = false;
+        let globalSvgCounter = 0; 
+
+        // --- ДЕМО РЕЖИМ: Перехоплення рандому ---
+        let currentSeed = 42;
+        const seededRandom = () => {
+            currentSeed = (currentSeed * 9301 + 49297) % 233280;
+            return currentSeed / 233280;
+        };
+        Math.random = seededRandom;
+
+        // =========================================
+        // I18N DICTIONARY
+        // =========================================
+        const dict = {
+            en: {
+                "app-title": "📐 Algebra 1 Pro",
+                "lbl-builder": "Quadratic Functions Builder",
+                "lbl-school": "School Name (Class name):",
+                "lbl-format": "Question Format:",
+                "lbl-mixed": "Mixed",
+                "lbl-layout": "Layout & Batch Settings:",
+                "opt-compact": "Compact Mode",
+                "opt-workspace": "Workspace Mode",
+                "lbl-variants": "Number of Variants:",
+                "lbl-shuffle": "Shuffle Questions",
+                "lbl-selectall": "Select All",
+                "btn-gen": "Generate Test & Key",
+                "btn-print": "Print Document",
+
+                "set-title": "⚙️ Settings",
+                "set-lang": "🌐 Language / Мова",
+                "set-paper": "📄 Paper Format / Формат паперу",
+                "opt-letter": "US Letter (8.5\" x 11\")",
+                "opt-a4": "A4 (210mm x 297mm)",
+                "btn-apply": "Apply & Close",
+
+                "tip-school": "Appears at the top of every student's test page.",
+                "tip-format": "MCQ: Multiple choice with distractors.\nFRQ: Students solve on their own.\nMixed: Individual choice per task.",
+                "tip-layout": "Compact: 2 columns to save paper.\nWorkspace: 1 column with dedicated area for student steps.",
+                "tip-variants": "Generates multiple unique versions of the test (50 max).",
+                "tip-shuffle": "Randomizes the order of questions for each variant to prevent cheating.",
+                "tip-print": "PRO TIP: In the print settings, uncheck 'Headers and Footers' for a clean look.",
+                "err-print": "Please click 'Generate Test' first!",
+
+                // Print Output
+                "pr-name": "Name",
+                "pr-date": "Date",
+                "pr-period": "Period",
+                "pr-var": "Version",
+                "pr-page": "Page",
+                "pr-score": "Score",
+                "pr-title": "Algebra 1: Quadratic Functions",
+                "pr-key": "MASTER ANSWER KEY",
+                "pr-part": "Part",
+                "pr-key-var": "Ver",
+
+                // Summary
+                "sum-success": "Success!",
+                "sum-page": "page",
+                "sum-pages": "pages",
+                "sum-per": "per student.",
+                "sum-tot": "Total paper needed:",
+                "sum-sheets": "sheets.",
+                "ph-school": "Enter school name...",
+                "var-m": "m",
+
+                // Paywall Text (From Linear Demo)
+                "demo-paywall-title": "🔥 Great Work!",
+                "demo-paywall-body": "This is a demo version. Get PRO to generate <b>up to 50 unique variants</b> and unlock the <b>Print to PDF</b> feature.",
+                "demo-paywall-btn": "Get PRO Version", 
+                "demo-paywall-close": "Back to Preview",
+                "demo-tooltip": "Max 2 in Demo. Up to 20 in PRO!",
+
+                // Task Names
+                "tn-t1": "Identify a, b, c & Opening",
+                "tn-t2": "Vertex Form (h, k)",
+                "tn-t3": "Axis of Symmetry",
+                "tn-t4": "Find Y-intercept",
+                "tn-t5": "Evaluate x = -3",
+                "tn-t6": "Find Zeros from Graph",
+                "tn-t7": "Vertical Shift (Transf.)",
+                "tn-t8": "Solve by Factoring",
+                "tn-t9": "Word Prob: Max Height Time",
+                "tn-t10": "Compare Vertex Heights",
+
+               // --- ТЕКСТИ ЗАВДАНЬ (QUESTIONS) ---
+                "q-t1": "Identify a, b, c and opening direction:",
+                "b-t1": "a = ___, b = ___, c = ___, Opens: ___",
+                "q-t2": "Find the vertex (h, k):",
+                "b-t2": "Vertex: (____, ____)",
+                "q-t3": "Find the axis of symmetry:",
+                "b-t3": "Axis: ________",
+                "q-t4": "Find the y-intercept:",
+                "b-t4": "y-intercept: ________",
+                "q-t5-1": "Evaluate ",
+                "q-t5-2": " for ",
+                "b-t5": "y = ________",
+                "q-t6": "Identify the zeros (roots) of the parabola:",
+                "b-t6": "Zeros: ________",
+                "q-t7-1": "Describe the transformation from ",
+                "q-t7-2": " to ",
+                "b-t7": "Transformation: ____________________",
+                "q-t8": "Solve by factoring:",
+                "b-t8": "x = ________",
+                "q-t9-1": "A ball is thrown: ",
+                "q-t9-2": ". At what <b>time</b> does it reach max height?",
+                "b-t9": "Time = ________",
+                "q-t10-1": "Equation of g(x): ",
+                "q-t10-2": ". Which function has the lower vertex?<br>Graph of f(x):",
+                "b-t10": "Answer: ________",
+
+                // --- ДИСТРАКТОРИ ТА ЗНАЧЕННЯ (LABELS) ---
+                "ans-equal": "They are equal",
+                "ans-cannot": "Cannot be determined",
+                "lbl-up": "Up",
+                "lbl-down": "Down",
+                "lbl-shift-up": "Shift Up by ",
+                "lbl-shift-down": "Shift Down by ",
+                "lbl-shift-left": "Shift Left by ",
+                "lbl-shift-right": "Shift Right by ",
+                "lbl-sec": "sec"
+            },
+            uk: {
+                "app-title": "📐 Алгебра 1 Pro",
+                "lbl-school": "Назва закладу (Клас):",
+                "lbl-format": "Формат завдань:",
+                "lbl-mixed": "Змішаний",
+                "lbl-layout": "Макет та Друк:",
+                "opt-compact": "Компактний (2 колонки)",
+                "opt-workspace": "З місцем для розв'язку",
+                "lbl-variants": "Кількість варіантів:",
+                "lbl-shuffle": "Перемішати завдання",
+                "lbl-builder": "Тема: Квадратичні функції",
+                "lbl-selectall": "Вибрати всі",
+                "btn-gen": "Згенерувати тест і ключі",
+                "btn-print": "Друкувати документ",
+
+                "set-title": "⚙️ Налаштування",
+                "set-lang": "🌐 Language / Мова",
+                "set-paper": "📄 Формат паперу",
+                "opt-letter": "Американський (8.5\" x 11\")",
+                "opt-a4": "A4 (210мм x 297мм)",
+                "btn-apply": "Застосувати та Закрити",
+
+                "tip-school": "З'явиться у шапці на сторінці кожного учня.",
+                "tip-format": "MCQ: Тести з варіантами відповідей.\nFRQ: Відкрита форма (розв'язують самі).\nЗмішаний: Вибір формату для кожного завдання.",
+                "tip-layout": "Компактний: 2 колонки для економії паперу.\nЗ розв'язком: 1 колонка з місцем для обчислень.",
+                "tip-variants": "Створює унікальні варіанти тесту (макс. 50).",
+                "tip-shuffle": "Змінює порядок питань у кожному варіанті.",
+                "tip-print": "ПОРАДА: У налаштуваннях принтера вимкніть 'Колонтитули' (Headers/Footers) для гарного вигляду.",
+                "err-print": "Спочатку натисніть 'Згенерувати тест'!",
+
+                // Print Output
+                "pr-name": "Ім'я",
+                "pr-date": "Дата",
+                "pr-period": "Клас",
+                "pr-var": "Варіант",
+                "pr-page": "Стор.",
+                "pr-score": "Оцінка",
+                "pr-title": "Алгебра: Квадратичні функції",
+                "pr-key": "ТАБЛИЦЯ ВІДПОВІДЕЙ",
+                "pr-part": "Частина",
+                "pr-key-var": "Вар",
+
+                // Summary
+                "sum-success": "Готово!",
+                "sum-page": "стор.",
+                "sum-pages": "стор.",
+                "sum-per": "на учня.",
+                "sum-tot": "Всього аркушів потрібно:",
+                "sum-sheets": "шт.",
+                "ph-school": "Введіть назву закладу (клас)...",
+                "var-m": "k",
+
+                // Paywall Text (From Linear Demo)
+                "demo-paywall-title": "🔥 Чудова робота!",
+                "demo-paywall-body": "Це демо-версія. Придбайте PRO, щоб генерувати <b>до 50 унікальних варіантів</b> та розблокувати <b>функцію друку</b> у PDF.",
+                "demo-paywall-btn": "Отримати PRO версію", 
+                "demo-paywall-close": "Повернутись до прев'ю",
+                "demo-tooltip": "В демо макс. 2. У PRO до 20!",
+
+                // Task Names
+                "tn-t1": "Знайти a, b, c та напрямок віток",
+                "tn-t2": "Знайти вершину (h, k)",
+                "tn-t3": "Вісь симетрії",
+                "tn-t4": "Точка перетину OY",
+                "tn-t5": "Обчислити для x = -3",
+                "tn-t6": "Нулі функції за графіком",
+                "tn-t7": "Вертикальний зсув",
+                "tn-t8": "Розв'язати через множники",
+                "tn-t9": "Задача: Час до макс. висоти",
+                "tn-t10": "Порівняти дві функції",
+
+               // --- ТЕКСТИ ЗАВДАНЬ (QUESTIONS) ---
+                "q-t1": "Визначте коефіцієнти a, b, c та напрямок віток:",
+                "b-t1": "a = ___, b = ___, c = ___, Вітки: ___",
+                "q-t2": "Знайдіть вершину параболи (h, k):",
+                "b-t2": "Вершина: (____, ____)",
+                "q-t3": "Знайдіть рівняння осі симетрії:",
+                "b-t3": "Вісь: ________",
+                "q-t4": "Знайдіть точку перетину з віссю OY:",
+                "b-t4": "Перетин з OY: ________",
+                "q-t5-1": "Обчисліть ",
+                "q-t5-2": " для ",
+                "b-t5": "y = ________",
+                "q-t6": "Знайдіть нулі (корені) функції за графіком:",
+                "b-t6": "Нулі: ________",
+                "q-t7-1": "Опишіть перетворення графіка від ",
+                "q-t7-2": " до ",
+                "b-t7": "Перетворення: ____________________",
+                "q-t8": "Розв'яжіть рівняння розкладанням на множники:",
+                "b-t8": "x = ________",
+                "q-t9-1": "Рух тіла задано рівнянням: ",
+                "q-t9-2": ". В який <b>час</b> досягається максимальна висота?",
+                "b-t9": "Час = ________",
+                "q-t10-1": "Рівняння g(x): ",
+                "q-t10-2": ". Яка з функцій має нижчу вершину?<br> Графік f(x):",
+                "b-t10": "Відповідь: ________",
+                
+                // --- ДИСТРАКТОРИ ТА ЗНАЧЕННЯ (LABELS) ---
+                "ans-equal": "Вони однакові",
+                "ans-cannot": "Неможливо визначити",
+                "lbl-up": "Вгору",
+                "lbl-down": "Вниз",
+                "lbl-shift-up": "Зсув угору на ",
+                "lbl-shift-down": "Зсув униз на ",
+                "lbl-shift-left": "Зсув ліворуч на ",
+                "lbl-shift-right": "Зсув праворуч на ",
+                "lbl-sec": "с"
+            }
+        };
+
+        let currentLang = localStorage.getItem('algPro_lang') || 'en';
+        let currentPaper = localStorage.getItem('algPro_paper') || 'letter';
+
+        function applyTranslations() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[currentLang][key]) el.innerHTML = dict[currentLang][key];
+            });
+            document.querySelectorAll('[data-i18n-tip]').forEach(el => {
+                const key = el.getAttribute('data-i18n-tip');
+                if (dict[currentLang][key]) el.setAttribute('data-tip', dict[currentLang][key]);
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (dict[currentLang][key]) el.placeholder = dict[currentLang][key];
+            });
+            TaskTypes.forEach(t => {
+                const nameEl = document.getElementById(`name-${t.id}`);
+                if (nameEl) nameEl.textContent = dict[currentLang][`tn-${t.id}`];
+            });
+
+            // Оновлення тексту в Paywall
+            const paywall = document.getElementById('premium-paywall');
+            if (paywall) {
+                paywall.updateText(
+                    dict[currentLang]["demo-paywall-title"],
+                    dict[currentLang]["demo-paywall-body"],
+                    dict[currentLang]["demo-paywall-btn"],
+                    dict[currentLang]["demo-paywall-close"]
+                );
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('settings-modal');
+            const btnSettings = document.getElementById('btn-settings');
+            const btnClose = document.getElementById('btn-close-settings');
+            const btnApply = document.getElementById('btn-apply-settings');
+            const langSelect = document.getElementById('lang-select');
+            const paperSelect = document.getElementById('paper-select');
+
+            btnSettings.onclick = () => {
+                langSelect.value = currentLang;
+                paperSelect.value = currentPaper;
+                modal.classList.add('show');
+            };
+
+            const closeModal = () => modal.classList.remove('show');
+            btnClose.onclick = closeModal;
+            window.onclick = (e) => { if (e.target === modal) closeModal(); };
+
+            btnApply.onclick = () => {
+                let hasChanges = false;
+                if (currentLang !== langSelect.value || currentPaper !== paperSelect.value) hasChanges = true;
+
+                currentLang = langSelect.value;
+                currentPaper = paperSelect.value;
+
+                if (hasChanges) {
+                    localStorage.setItem('algPro_lang', currentLang);
+                    localStorage.setItem('algPro_paper', currentPaper);
+
+                    applyTranslations();
+                    let style = document.getElementById('dynamic-print-style');
+                    if (!style) {
+                        style = document.createElement('style');
+                        style.id = 'dynamic-print-style';
+                        document.head.appendChild(style);
+                    }
+                    style.innerHTML = `@media print { @page { size: ${currentPaper === 'a4' ? 'A4' : 'letter'}; margin: 0 !important; } }`;
+                    isGenerated = false;
+                    const container = document.getElementById('print-container');
+                    if (container) container.innerHTML = ''; 
+                }
+                closeModal();
+            };
+
+            let initStyle = document.createElement('style');
+            initStyle.id = 'dynamic-print-style';
+            initStyle.innerHTML = `@media print { @page { size: ${currentPaper === 'a4' ? 'A4' : 'letter'}; margin: 0 !important; } }`;
+            document.head.appendChild(initStyle);
+
+            // 3. DEMO RESTRICTIONS: Обмеження ВАРІАНТІВ
+            const variantsInput = document.getElementById('variants-count');
+            const paywall = document.getElementById('premium-paywall'); 
+
+            if (variantsInput && paywall) {
+                variantsInput.addEventListener('input', (e) => {
+                    const value = parseInt(e.target.value);
+                    const DEMO_LIMIT = 1; 
+                    if (value > DEMO_LIMIT) {
+                        e.target.value = DEMO_LIMIT;
+                        paywall.open();
+                        e.target.blur(); 
+                    }
+                });
+            }
+
+            // 4. DEMO RESTRICTIONS: Tooltip для ЗАВДАНЬ
+            const taskList = document.getElementById('task-list');
+            if (taskList) {
+                taskList.addEventListener('input', (e) => {
+                    if (e.target.tagName === 'INPUT' && e.target.type === 'number') {
+                        const val = parseInt(e.target.value);
+                        const TASK_LIMIT = 2; // Ліміт завдань
+                        if (val > TASK_LIMIT) {
+                            e.target.value = TASK_LIMIT; 
+                            const row = e.target.closest('.task-row');
+                            if (row) {
+                                row.setAttribute('data-pro-tip', dict[currentLang]["demo-tooltip"]);
+                                row.classList.add('show-pro-tip');
+                                setTimeout(() => row.classList.remove('show-pro-tip'), 2500);
+                            }
+                        }
+                    }
+                });
+            }
+        });
+
+        // =========================================
+        // ЛОГІКА СТРІЛОЧОК ТА ВВЕДЕННЯ
+        // =========================================
+        document.addEventListener('mousemove', function (e) {
+            if (e.target.type === 'number') {
+                const input = e.target;
+                const rect = input.getBoundingClientRect();
+                if (e.clientX - rect.left > rect.width - 30) {
+                    input.style.cursor = 'pointer'; input.classList.add('arrows-active');
+                } else {
+                    input.style.cursor = 'text'; input.classList.remove('arrows-active');
+                }
+            }
+        });
+
+        document.addEventListener('mouseout', function (e) {
+            if (e.target.type === 'number') e.target.classList.remove('arrows-active');
+        });
+
+        let arrowInterval, arrowTimeout;
+        document.addEventListener('mousedown', function (e) {
+            if (e.target.type === 'number') {
+                const input = e.target;
+                const rect = input.getBoundingClientRect();
+                if (e.clientX - rect.left > rect.width - 30) {
+                    const isUp = (e.clientY - rect.top) < rect.height / 2;
+                    const changeValue = () => {
+                        let val = parseInt(input.value) || 0, min = parseInt(input.min) || 0, max = parseInt(input.max) || 100;
+                        if (isUp && val < max) input.value = val + 1;
+                        else if (!isUp && val > min) input.value = val - 1;
+                        input.focus(); isGenerated = false; input.dispatchEvent(new Event('input', { bubbles: true }));
+                    };
+                    changeValue(); e.preventDefault();
+                    arrowTimeout = setTimeout(() => { arrowInterval = setInterval(changeValue, 70); }, 400);
+                    const stopArrows = () => { clearTimeout(arrowTimeout); clearInterval(arrowInterval); document.removeEventListener('mouseup', stopArrows); };
+                    document.addEventListener('mouseup', stopArrows);
+                }
+            }
+        });
+
+        document.addEventListener('input', function (e) {
+            if (e.target.type === 'number') {
+                let max = parseInt(e.target.max);
+                if (!isNaN(max) && parseInt(e.target.value) > max) { e.target.value = max; isGenerated = false; }
+            }
+        });
+
+        document.addEventListener('blur', function (e) {
+            if (e.target.type === 'number') {
+                let min = parseInt(e.target.min) || 0;
+                if (e.target.value === "" || parseInt(e.target.value) < min) { e.target.value = min; isGenerated = false; }
+            }
+        }, true);
+
+        // =========================================
+        // МАТЕМАТИЧНИЙ РУШІЙ
+        // =========================================
+        const MathUtils = {
+            getInt: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
+            getNonZero: (min, max) => { let n = MathUtils.getInt(min, max); return n === 0 ? MathUtils.getNonZero(min, max) : n; },
+            gcd: (a, b) => b === 0 ? Math.abs(a) : MathUtils.gcd(b, a % b),
+
+            formatFrac: (num, den) => {
+                if (den === 1) return `${num}`;
+                let sign = (num * den < 0) ? "-&thinsp;" : "";
+                return `${sign}<span class="frac"><span class="num">${Math.abs(num)}</span><span class="den">${Math.abs(den)}</span></span>`;
+            },
+            getSlope: () => {
+                const isFraction = Math.random() > 0.4;
+                if (!isFraction) { let m = MathUtils.getNonZero(-5, 5); return { num: m, den: 1, val: m, str: `${m}` }; }
+                let num = MathUtils.getNonZero(-5, 5), den = MathUtils.getInt(2, 5);
+                let divisor = MathUtils.gcd(num, den); num /= divisor; den /= divisor;
+                if (den < 0) { num = -num; den = -den; }
+                return { num, den, val: num / den, str: MathUtils.formatFrac(num, den) };
+            },
+            getOpposite: (m) => ({ num: -m.num, den: m.den, val: -m.val, str: MathUtils.formatFrac(-m.num, m.den) }),
+            getReciprocal: (m) => {
+                let n = m.den, d = m.num;
+                if (d < 0) { n = -n; d = -d; }
+                return { num: n, den: d, val: n / d, str: MathUtils.formatFrac(n, d) };
+            },
+            formatEq: (mObj, b) => {
+                let mStr = mObj.val === 1 ? "" : (mObj.val === -1 ? "-&thinsp;" : mObj.str);
+                let bStr = b > 0 ? ` + ${b}` : (b < 0 ? ` - ${Math.abs(b)}` : "");
+                if (b === 0 && mStr === "") mStr = "1";
+                return `y = ${mStr}x${bStr}`;
+            },
+            formatStandardEq: (A, B, C) => {
+                let aStr = A === 1 ? "" : (A === -1 ? "-&thinsp;" : A);
+                let bStr = B === 1 ? "+&thinsp;" : (B === -1 ? "-&thinsp;" : (B > 0 ? `+&thinsp;${B}` : `-&thinsp;${Math.abs(B)}`));
+                return `${aStr}x ${bStr}y = ${C}`;
+            },
+            formatRoots: (r1, r2) => {
+                if (r1 === r2) return `x = ${r1}`;
+                let min = Math.min(r1, r2);
+                let max = Math.max(r1, r2);
+                return `x = ${min}, x = ${max}`;
+            },
+            buildMCQ: (correct, distractors, L) => {
+                let options = [];
+                let seen = new Set();
+
+                options.push({ text: correct, isCorrect: true });
+                seen.add(correct);
+
+                distractors.forEach(d => {
+                    if (!seen.has(d) && seen.size < 4) {
+                        seen.add(d);
+                        options.push({ text: d, isCorrect: false });
+                    }
+                });
+
+                let allText = correct + " " + distractors.join(" ");
+                let matches = allText.match(/-?\d+/g); 
+                let baseSeeds = matches ? [...new Set(matches.map(Number))] : [-3, -2, -1, 1, 2, 3];
+                let expandedSeeds = [...new Set([...baseSeeds, ...baseSeeds.map(n => -n)])];
+                
+                const getSeed = () => expandedSeeds[MathUtils.getInt(0, expandedSeeds.length - 1)];
+
+                let attempts = 0; 
+                
+                while (options.length < 4) {
+                    attempts++;
+                    let fallback = "";
+                    let s = String(correct);
+                    
+                    let currentSeed = attempts > 5 ? getSeed() + attempts : getSeed();
+
+                    if (s.includes("Shift") || s.includes("Зсув")) {
+                        let dirs = [L["lbl-shift-up"], L["lbl-shift-down"], L["lbl-shift-left"], L["lbl-shift-right"]];
+                        fallback = `${dirs[MathUtils.getInt(0, 3)]}${Math.abs(currentSeed) || 1}`;
+                    } else if (s.includes("sec") || s.includes(" с")) { 
+                        fallback = `${Math.abs(currentSeed) || MathUtils.getInt(2, 5)} ${L["lbl-sec"]}`;
+                    } else if (s.includes("a=")) {
+                        let fDir = Math.random() > 0.5 ? L["lbl-up"] : L["lbl-down"];
+                        fallback = `a=${currentSeed}, b=${currentSeed}, c=${currentSeed}, ${fDir}`;
+                    } else if (s.includes("x =") && s.includes(",")) {
+                        fallback = MathUtils.formatRoots(currentSeed, currentSeed + 1);
+                    } else if (s.includes("(")) {
+                        fallback = `(${currentSeed}, ${currentSeed})`;
+                    } else if (s.includes("x =")) {
+                        fallback = `x = ${currentSeed}`;
+                    } else if (s.includes("y =")) {
+                        fallback = `y = ${currentSeed}`;
+                    } else if (!isNaN(s)) {
+                        fallback = String(currentSeed);
+                    } else {
+                        fallback = s === "f(x)" ? "g(x)" : "f(x)";
+                        if (attempts > 5) fallback = `h(x)`; 
+                    }
+
+                    if (!seen.has(fallback)) {
+                        options.push({ text: fallback, isCorrect: false });
+                        seen.add(fallback);
+                    } else if (attempts > 20) {
+                        options.push({ text: L["ans-cannot"] || "Error", isCorrect: false });
+                        break;
+                    }
+                }
+
+                options.sort(() => Math.random() - 0.5);
+
+                let letters = ['A', 'B', 'C', 'D'], correctLetter = '', html = '<div class="mcq-grid">';
+                options.forEach((o, i) => {
+                    if (o.isCorrect) correctLetter = letters[i];
+                    html += `<div class="mcq-option"><b>${letters[i]}.</b> <div>${o.text}</div></div>`;
+                });
+                return { html: html + '</div>', correctLetter };
+            }
+        }
+
+        // =========================================
+        // ГЕНЕРАТОР ЗАВДАНЬ
+        // =========================================
+        const TaskTypes = [
+            {
+                id: 't1', generate: (mcq, L) => {
+                    let a = [-3, -2, -1, 2, 3][MathUtils.getInt(0, 4)];
+                    let b = MathUtils.getNonZero(-10, 10), c = MathUtils.getNonZero(-10, 10);
+                    let dir = a > 0 ? L["lbl-up"] : L["lbl-down"];
+                    let eq = `y = ${a === 1 ? '' : (a === -1 ? '-' : a)}x² ${b > 0 ? '+' : ''}${b}x ${c > 0 ? '+' : ''}${c}`;
+                    let ans = `a=${a}, b=${b}, c=${c}, ${dir}`;
+                    let qText = `${L["q-t1"]}<br><div class="math-eq">${eq}</div>`;
+                    if (mcq) {
+                        let wrongDir = a > 0 ? L["lbl-down"] : L["lbl-up"];
+                        let res = MathUtils.buildMCQ(ans, [
+                            `a=${a}, b=${c}, c=${b}, ${dir}`, 
+                            `a=${a}, b=${b}, c=${c}, ${wrongDir}`, 
+                            `a=${-a}, b=${b}, c=${c}, ${wrongDir}`
+                        ], L);
+                        return { q: qText, blank: res.html, shortAns: res.correctLetter };
+                    }
+                    return { q: qText, blank: L["b-t1"], shortAns: ans };
+                }
+            },
+            {
+                id: 't2', generate: (mcq, L) => {
+                    let h = MathUtils.getInt(-9, 9), k = MathUtils.getInt(-9, 9), a = MathUtils.getNonZero(-2, 2);
+                    let aStr = a === 1 ? '' : (a === -1 ? '-' : a);
+                    let kStr = k === 0 ? '' : (k < 0 ? ` - ${-k}` : ` + ${k}`);
+                    let eq = h === 0 ? `y = ${aStr}x²${kStr}` : `y = ${aStr}(x ${h < 0 ? `+ ${-h}` : `- ${h}`})²${kStr}`;
+                    let ans = `(${h}, ${k})`;
+                    let qText = `${L["q-t2"]}<br><div class="math-eq">${eq}</div>`;
+                    if (mcq) {
+                        let res = MathUtils.buildMCQ(ans, [`(${-h}, ${k})`, `(${k}, ${h})`, `(${-h}, ${-k})`], L);
+                        return { q: qText, blank: res.html, shortAns: res.correctLetter };
+                    }
+                    return { q: qText, blank: L["b-t2"], shortAns: ans };
+                }
+            },
+            {
+                id: 't3', generate: (mcq, L) => {
+                    let a = MathUtils.getInt(1, 2);
+                    let bMultiplier = MathUtils.getNonZero(-3, 3);
+                    let b = bMultiplier * (2 * a); 
+                    let c = MathUtils.getInt(-5, 5);
+                    let bStr = b > 0 ? `+ ${b}` : `- ${Math.abs(b)}`;
+                    let cStr = c > 0 ? `+ ${c}` : (c === 0 ? `` : `- ${Math.abs(c)}`);
+                    let eq = `y = ${a === 1 ? '' : a}x² ${bStr}x ${cStr}`;
+                    let ansVal = -b / (2 * a);
+                    let ans = `x = ${ansVal}`;
+                    let qText = `${L["q-t3"]}<br><div class="math-eq">${eq}</div>`;
+                    if (mcq) {
+                        let res = MathUtils.buildMCQ(ans, [`x = ${-ansVal}`, `y = ${ansVal}`, `x = ${-b / a}`], L);
+                        return { q: qText, blank: res.html, shortAns: res.correctLetter };
+                    }
+                    return { q: qText, blank: L["b-t3"], shortAns: ans };
+                }
+            },
+            {
+                id: 't4', generate: (mcq, L) => {
+                    let a = MathUtils.getNonZero(-3, 3);
+                    let b = MathUtils.getNonZero(-5, 5); 
+                    let c = MathUtils.getNonZero(-10, 10);
+                    let bStr = b > 0 ? `+ ${b === 1 ? '' : b}x ` : `- ${b === -1 ? '' : Math.abs(b)}x `;
+                    let cStr = c > 0 ? `+ ${c}` : `- ${Math.abs(c)}`;
+                    let eq = `y = ${a === 1 ? '' : (a === -1 ? '-' : a)}x² ${bStr}${cStr}`;
+                    let ans = `(0, ${c})`;
+                    let qText = `${L["q-t4"]}<br><div class="math-eq">${eq}</div>`;
+                    if (mcq) {
+                        let res = MathUtils.buildMCQ(ans, [`(0, ${-c})`, `(0, ${a})`, `(${c}, 0)`], L);
+                        return { q: qText, blank: res.html, shortAns: res.correctLetter };
+                    }
+                    return { q: qText, blank: L["b-t4"], shortAns: ans };
+                }
+            },
+            {
+                id: 't5', generate: (mcq, L) => {
+                    let c = MathUtils.getInt(-5, 5);
+                    let eq = `y = x² ${c > 0 ? '+' : ''}${c === 0 ? '' : c}`;
+                    let xVal = -3;
+                    let ans = Math.pow(xVal, 2) + c; 
+                    let qText = `${L["q-t5-1"]}<span class="math-eq">${eq}</span>${L["q-t5-2"]}<span class="math-eq">x = ${xVal}</span>:`;
+                    if (mcq) {
+                        let res = MathUtils.buildMCQ(`${ans}`, [`${-9 + c}`, `${9 - c}`, `${ans - 3}`], L);
+                        return { q: qText, blank: res.html, shortAns: res.correctLetter };
+                    }
+                    return { q: qText, blank: L["b-t5"], shortAns: `${ans}` };
+                }
+            },
+            {
+                id: 't6', generate: (mcq, L) => {
+                    let h = MathUtils.getInt(-3, 3);
+                    let dist = MathUtils.getInt(0, 3); 
+                    let r1 = h - dist, r2 = h + dist;
+                    let a = (Math.random() > 0.5) ? 1 : -1;
+                    let k = -a * Math.pow(dist, 2); 
+                    let ans = MathUtils.formatRoots(r1, r2);
+                    let graphSVG = renderParabola(a, h, k, true);
+                    let qText = `${L["q-t6"]}<br>${graphSVG}`;
+                    if (mcq) {
+                        let dists = [`x = ${h}, y = ${k}`]; 
+                        if (r1 === r2) {
+                            dists.push(MathUtils.formatRoots(-r1, -r1));
+                            dists.push(MathUtils.formatRoots(r1 + 1, r1 + 1));
+                        } else {
+                            dists.push(MathUtils.formatRoots(-r1, -r2));
+                            dists.push(MathUtils.formatRoots(r1 + (r1 === 0 ? 1 : -1), r2 + (r2 === 0 ? 1 : -1)));
+                        }
+                        let res = MathUtils.buildMCQ(ans, dists, L);
+                        return { q: qText, blank: res.html, shortAns: res.correctLetter };
+                    }
+                    return { q: qText, blank: L["b-t6"], shortAns: ans };
+                }
+            },
+            {
+                id: 't7', generate: (mcq, L) => {
+                    let k = MathUtils.getNonZero(-5, 5);
+                    let ans = k > 0 ? `${L["lbl-shift-up"]}${k}` : `${L["lbl-shift-down"]}${-k}`;
+                    let eq = `g(x) = x² ${k > 0 ? '+' : ''}${k}`;
+                    let qText = `${L["q-t7-1"]}<span class="math-eq">f(x) = x²</span>${L["q-t7-2"]}<span class="math-eq">${eq}</span>:`;
+                    if (mcq) {
+                        let wrongDir = k > 0 ? `${L["lbl-shift-down"]}${k}` : `${L["lbl-shift-up"]}${-k}`;
+                        let wrongAxis1 = `${L["lbl-shift-right"]}${Math.abs(k)}`;
+                        let wrongAxis2 = `${L["lbl-shift-left"]}${Math.abs(k)}`;
+                        let res = MathUtils.buildMCQ(ans, [wrongDir, wrongAxis1, wrongAxis2], L);
+                        return { q: qText, blank: res.html, shortAns: res.correctLetter };
+                    }
+                    return { q: qText, blank: L["b-t7"], shortAns: ans };
+                }
+            },
+            {
+                id: 't8', generate: (mcq, L) => {
+                    let r1 = MathUtils.getNonZero(-5, 5);
+                    let r2 = Math.random() > 0.85 ? r1 : MathUtils.getNonZero(-5, 5); 
+                    let b = -(r1 + r2);
+                    let c = r1 * r2;
+                    let bStr = b === 0 ? "" : (b === 1 ? "+ x " : (b === -1 ? "- x " : (b > 0 ? `+ ${b}x ` : `- ${Math.abs(b)}x `)));
+                    let cStr = c > 0 ? `+ ${c}` : `- ${Math.abs(c)}`;
+                    let eq = `x² ${bStr}${cStr} = 0`;
+                    let ans = MathUtils.formatRoots(r1, r2);
+                    let qText = `${L["q-t8"]}<br><div class="math-eq">${eq}</div>`;
+                    if (mcq) {
+                        let dists = [
+                            MathUtils.formatRoots(-r1, -r2), 
+                            MathUtils.formatRoots(r1, -r2), 
+                            MathUtils.formatRoots(-r1, r2)
+                        ];
+                        let res = MathUtils.buildMCQ(ans, dists, L);
+                        return { q: qText, blank: res.html, shortAns: res.correctLetter };
+                    }
+                    return { q: qText, blank: L["b-t8"], shortAns: ans };
+                }
+            },
+            {
+                id: 't9', generate: (mcq, L) => {
+                    let v0 = [32, 64, 96][MathUtils.getInt(0, 2)];
+                    let h0 = MathUtils.getInt(10, 50);
+                    let eq = `h(t) = -16t² + ${v0}t + ${h0}`;
+                    let tMax = -v0 / (2 * -16); 
+                    let ans = `${tMax} ${L["lbl-sec"]}`;
+                    let qText = `${L["q-t9-1"]}<span class="math-eq">${eq}</span>${L["q-t9-2"]}`;
+                    if (mcq) {
+                        let maxHeight = -16 * Math.pow(tMax, 2) + v0 * tMax + h0;
+                        let res = MathUtils.buildMCQ(ans, [`${v0} ${L["lbl-sec"]}`, `${h0} ${L["lbl-sec"]}`, `${maxHeight} ${L["lbl-sec"]}`], L);
+                        return { q: qText, blank: res.html, shortAns: res.correctLetter };
+                    }
+                    return { q: qText, blank: L["b-t9"], shortAns: ans };
+                }
+            },
+            {
+                id: 't10', generate: (mcq, L) => {
+                    let h = MathUtils.getInt(-4, 4); 
+                    let kGraph = MathUtils.getInt(-5, 5); 
+                    let kEq = MathUtils.getInt(-5, 5);    
+                    while (kEq === kGraph) kEq = MathUtils.getInt(-5, 5);
+                    
+                    let hStr = h === 0 ? "x²" : (h > 0 ? `(x - ${h})²` : `(x + ${-h})²`);
+                    let kStr = kEq === 0 ? "" : (kEq > 0 ? ` + ${kEq}` : ` - ${Math.abs(kEq)}`);
+                    let eq = `g(x) = ${hStr}${kStr}`;
+                    
+                    let ans = kGraph < kEq ? `f(x)` : `g(x)`; 
+                    let wrongAns = kGraph < kEq ? `g(x)` : `f(x)`;
+                    let graphSVG = renderParabola(1, h, kGraph, false);
+                    
+                    let qText = `${L["q-t10-1"]}<span class="math-eq">${eq}</span>${L["q-t10-2"]}<br>${graphSVG}`;
+
+                    if (mcq) {
+                        let res = MathUtils.buildMCQ(ans, [wrongAns, L["ans-equal"], L["ans-cannot"]], L);
+                        return { q: qText, blank: res.html, shortAns: res.correctLetter };
+                    }
+                    return { q: qText, blank: L["b-t10"], shortAns: ans };
+                }
+            }
+        ];
+
+        // --- РЕНДЕР ГРАФІКІВ ---
+        function renderGrid(m, b) {
+            globalSvgCounter++;
+            const clipId = `grid-clip-${globalSvgCounter}`;
+            let svg = `<svg class="grid-svg" viewBox="-10 -10 20 20" style="overflow: visible; width:100%; height:auto;">
+                <defs><clipPath id="${clipId}"><rect x="-10" y="-10" width="20" height="20" /></clipPath></defs>
+                <rect x="-10" y="-10" width="20" height="20" fill="white" />
+                <g clip-path="url(#${clipId})">
+                    <g stroke="#eee" stroke-width="0.1">`;
+            for (let i = -9; i < 10; i++) { svg += `<line x1="${i}" y1="-10" x2="${i}" y2="10" /><line x1="-10" y1="${i}" x2="10" y2="${i}" />`; }
+            svg += `</g>
+                    <g stroke="#000" stroke-width="0.2"><line x1="0" y1="-10" x2="0" y2="10" /><line x1="-10" y1="0" x2="10" y2="0" /></g>`;
+            if (m !== undefined) { svg += `<line x1="-15" y1="${(-(m * -15 + b)).toFixed(2)}" x2="15" y2="${(-(m * 15 + b)).toFixed(2)}" stroke="#dc2626" stroke-width="0.2" />`; }
+            svg += `</g>
+                <g font-size="1.4" font-family="Arial" fill="#000" style="user-select:none;">
+                    <text x="0.3" y="0.8">0</text><text x="0.8" y="-0.3">1</text><text x="-0.9" y="-0.8">1</text>
+                </g>
+                <rect x="-10" y="-10" width="20" height="20" fill="none" stroke="#ccc" stroke-width="0.2" />
+            </svg>`;
+            return svg;
+        }
+
+        function renderParabola(a, h, k, showRoots = false) {
+            globalSvgCounter++;
+            const clipId = `grid-clip-${globalSvgCounter}`;
+            let svg = `<svg class="grid-svg" viewBox="-10 -10 20 20" style="overflow: visible; width:100%; height:auto;">
+                <defs><clipPath id="${clipId}"><rect x="-10" y="-10" width="20" height="20" /></clipPath></defs>
+                <rect x="-10" y="-10" width="20" height="20" fill="white" />
+                <g clip-path="url(#${clipId})">
+                    <g stroke="#eee" stroke-width="0.1">`;
+            for (let i = -9; i < 10; i++) { svg += `<line x1="${i}" y1="-10" x2="${i}" y2="10" /><line x1="-10" y1="${i}" x2="10" y2="${i}" />`; }
+            svg += `</g>
+                    <g stroke="#000" stroke-width="0.2"><line x1="0" y1="-10" x2="0" y2="10" /><line x1="-10" y1="0" x2="10" y2="0" /></g>`;
+            
+            let pathD = `M -10 ${-(a * Math.pow(-10 - h, 2) + k)}`;
+            for (let x = -9.5; x <= 10; x += 0.5) {
+                let y = a * Math.pow(x - h, 2) + k;
+                pathD += ` L ${x} ${-y}`; 
+            }
+            svg += `<path d="${pathD}" fill="none" stroke="#dc2626" stroke-width="0.3" />`;
+            
+            if (showRoots) {
+                let rootDist = Math.sqrt(-k/a);
+                let r1 = h - rootDist, r2 = h + rootDist;
+                svg += `<circle cx="${r1}" cy="0" r="0.4" fill="#3b82f6" />
+                        <circle cx="${r2}" cy="0" r="0.4" fill="#3b82f6" />`;
+            }
+            svg += `</g>
+                <g font-size="1.4" font-family="system-ui" fill="#000" style="user-select:none;">
+                    <text x="0.3" y="0.8">0</text><text x="0.8" y="-0.3">1</text><text x="-0.9" y="-0.8">1</text>
+                </g>
+                <rect x="-10" y="-10" width="20" height="20" fill="none" stroke="#ccc" stroke-width="0.2" />
+            </svg>`;
+            return svg;
+        }
+
+        window.onload = () => {
+            const list = document.getElementById('task-list');
+            TaskTypes.forEach((t, i) => {
+                const isActive = i < 5;
+                list.innerHTML += `<div class="task-row ${isActive ? '' : 'inactive'}">
+                    <input type="checkbox" id="chk-${t.id}" ${isActive ? 'checked' : ''}>
+                    <input type="number" id="num-${t.id}" value="${isActive ? 1 : 0}" min="0" max="20" ${isActive ? '' : 'disabled'}>
+                    <div class="task-name" id="name-${t.id}"></div>
+                    <select id="fmt-${t.id}" class="task-format-select"><option value="mcq">MCQ</option><option value="frq">FRQ</option></select>
+                </div>`;
+            });
+
+            applyTranslations();
+
+            document.querySelectorAll('input[name="q-format"]').forEach(r => r.addEventListener('change', e => {
+                document.querySelectorAll('.task-format-select').forEach(s => s.style.display = e.target.value === 'mixed' ? 'block' : 'none');
+            }));
+
+            TaskTypes.forEach(t => {
+                const c = document.getElementById(`chk-${t.id}`);
+                const n = document.getElementById(`num-${t.id}`);
+                const row = c.closest('.task-row');
+                c.addEventListener('change', () => {
+                    if (c.checked) { n.disabled = false; row.classList.remove('inactive'); if (n.value <= 0 || n.value === "") n.value = 1; if (!c.isProgrammatic) n.focus(); }
+                    else { n.disabled = true; row.classList.add('inactive'); n.value = 0; }
+                });
+                n.addEventListener('input', () => { if (n.value > 0 && !c.checked) c.checked = true; });
+                n.addEventListener('blur', () => { if (n.value <= 0) { c.checked = false; n.disabled = true; row.classList.add('inactive'); n.value = 0; } });
+            });
+
+            const toggleAll = document.getElementById('toggle-all-tasks');
+            const taskCheckboxes = document.querySelectorAll('#task-list input[type="checkbox"]');
+            toggleAll.addEventListener('change', () => {
+                const isChecked = toggleAll.checked;
+                taskCheckboxes.forEach(chk => {
+                    chk.isProgrammatic = true; chk.checked = isChecked; chk.dispatchEvent(new Event('change'));
+                    const numInput = document.getElementById(chk.id.replace('chk-', 'num-'));
+                    if (isChecked && (parseInt(numInput.value) <= 0 || numInput.value === "")) numInput.value = 1; else if (!isChecked) numInput.value = 0;
+                    delete chk.isProgrammatic;
+                });
+            });
+            taskCheckboxes.forEach(chk => {
+                chk.addEventListener('change', () => {
+                    if (!chk.checked) toggleAll.checked = false;
+                    if (Array.from(taskCheckboxes).every(c => c.checked)) toggleAll.checked = true;
+                });
+            });
+        };
+
+        // =========================================
+        // ГОЛОВНА ГЕНЕРАЦІЯ
+        // =========================================
+        function generateTest() {
+            globalSvgCounter = 0;
+            currentSeed = 100500;
+            const container = document.getElementById('print-container');
+            const layout = document.getElementById('layout-mode').value;
+            const globalFmt = document.querySelector('input[name="q-format"]:checked').value;
+            const variants = parseInt(document.getElementById('variants-count').value) || 1;
+            const school = document.getElementById('school-name').value;
+            const shuffle = document.getElementById('shuffle-questions').checked;
+            const paperFormat = document.getElementById('paper-select').value;
+            const L = dict[currentLang]; 
+
+            const now = new Date();
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const dateStr = months[now.getMonth()] + now.getDate();
+            const randomId = Math.floor(100 + Math.random() * 900);
+            const batchId = `${dateStr}-${randomId}`;
+
+            container.innerHTML = '';
+            container.style.display = 'block';
+            let masterKey = [];
+            let pagesPerVariant = 0;
+
+            for (let v = 1; v <= variants; v++) {
+                let vLabel = "";
+                let tempV = v;
+                while (tempV > 0) {
+                    let rem = (tempV - 1) % 26;
+                    vLabel = String.fromCharCode(65 + rem) + vLabel;
+                    tempV = Math.floor((tempV - 1) / 26);
+                }
+                let tasks = [];
+                TaskTypes.forEach(t => {
+                    if (document.getElementById(`chk-${t.id}`).checked) {
+                        let count = parseInt(document.getElementById(`num-${t.id}`).value);
+                        let isMCQ = globalFmt === 'mcq' || (globalFmt === 'mixed' && document.getElementById(`fmt-${t.id}`).value === 'mcq');
+                        for (let i = 0; i < count; i++) tasks.push({ ...t.generate(isMCQ, L), isMCQ });
+                    }
+                });
+
+                if (tasks.length === 0) return alert("Select at least one task!");
+                if (shuffle) tasks.sort(() => Math.random() - 0.5);
+                masterKey.push({ v: vLabel, ans: tasks.map(t => t.shortAns) });
+
+                const perPage = layout === 'layout-workspace' ? 6 : 8;
+                let pageNum = 1;
+                let currentTasksCount = 0;
+                const maxPerPage = layout === 'layout-workspace' ? 6 : 10;
+
+                function createNewPage(num) {
+                    const p = document.createElement('div');
+                    p.className = `test-page paper-${paperFormat}`;
+                    p.innerHTML = `
+                    <div class="header">
+                        <div class="header-lines">
+                            ${school ? `<div style="font-size:14pt; margin-bottom:5px; text-transform:uppercase; word-wrap:break-word; max-width:100%;">${school}</div>` : ''}
+                            ${L["pr-name"]}: __________________________<br>
+                            ${L["pr-date"]}: _________ ${L["pr-period"]}: _________
+                        </div>
+                        <div class="header-meta">
+                            Test ID: <b>${batchId}</b><br>
+                            ${L["pr-var"]} <b>${vLabel}</b><br>
+                            ${L["pr-page"]} ${num}
+                        </div>
+                        <div class="header-score">${L["pr-score"]}:<br>____ / ${tasks.length}</div>
+                    </div>
+                    <div class="test-title">${L["pr-title"]}</div>
+                    <div class="tasks-container ${layout}"></div>`;
+                    container.appendChild(p);
+                    return p;
+                }
+
+                let currentPage = createNewPage(pageNum);
+                let taskContainer = currentPage.querySelector('.tasks-container');
+
+                for (let i = 0; i < tasks.length; i++) {
+                    const t = tasks[i];
+                    const hasGraph = t.q.includes('grid-svg') || t.blank.includes('grid-svg');
+
+                    let spaceHeight = '0px';
+                    if (layout === 'layout-workspace') {
+                        if (hasGraph) spaceHeight = '0px';
+                        else spaceHeight = t.isMCQ ? '40px' : '50px';
+                    }
+
+                    const taskEl = document.createElement('div');
+                    taskEl.className = `task-item ${t.isMCQ ? 'format-mcq' : 'format-frq'}`;
+                    taskEl.style.display = 'block';
+
+                    let qText = t.q;
+                    let svgGraph = "";
+
+                    if (t.q.includes('<svg')) {
+                        let splitIndex = t.q.indexOf('<svg');
+                        qText = t.q.substring(0, splitIndex).replace('<br>', '');
+                        svgGraph = t.q.substring(splitIndex); 
+                    } else if (t.blank.includes('<svg')) {
+                        svgGraph = t.blank; 
+                    }
+
+                    if (svgGraph && t.isMCQ) {
+                        taskEl.innerHTML = `
+                            <div><b>${i + 1}.</b> ${qText}</div>
+                            <div class="graph-mcq-wrapper">
+                                <div class="svg-container">
+                                    ${svgGraph}
+                                </div>
+                                <div class="mcq-options-vertical">
+                                    ${t.blank}
+                                </div>
+                            </div>
+                        `;
+                    } else if (svgGraph && !t.isMCQ) {
+                        taskEl.innerHTML = `
+                            <div><b>${i + 1}.</b> ${qText}</div>
+                            <div style="margin-top:10px; width: 45%;">${svgGraph}</div>
+                            ${(layout === 'layout-workspace') ? `<div style="display:block; width:100%; height:${spaceHeight};"></div>` : ''}
+                        `;
+                    } else {
+                        taskEl.innerHTML = `
+                            <div><b>${i + 1}.</b> ${t.q}</div>
+                            <div style="margin-top:8px">${t.blank}</div>
+                            ${(layout === 'layout-workspace' && !hasGraph) ? `<div style="display:block; width:100%; height:${spaceHeight};"></div>` : ''}
+                        `;
+                    }
+                    taskContainer.appendChild(taskEl);
+                    currentTasksCount++;
+
+                    const taskRect = taskEl.getBoundingClientRect();
+                    const pageRect = currentPage.getBoundingClientRect();
+                    const isOverflowing = taskRect.bottom > (pageRect.bottom - 25);
+
+                    if (isOverflowing || currentTasksCount > maxPerPage) {
+                        if (currentTasksCount === 1) continue;
+                        taskContainer.removeChild(taskEl);
+                        i--;
+                        pageNum++;
+                        currentPage = createNewPage(pageNum);
+                        taskContainer = currentPage.querySelector('.tasks-container');
+                        currentTasksCount = 0;
+                    }
+                }
+                pagesPerVariant = pageNum;
+            }
+
+            // =========================================
+            // MASTER ANSWER KEY (Блоковий формат: Заголовок над кожним рядком)
+            // =========================================
+            const colsPerRow = 8; // АДАПТОВАНО під Квадратні функції (8 відповідей замість 10)
+            const totalQuestions = masterKey.length > 0 ? masterKey[0].ans.length : 0;
+            
+            let keyPagesCount = 0;
+            let currentKeyPage = null;
+            let currentKeyTableBody = null;
+
+            // Функція створення нової сторінки
+            function createNewKeyPage() {
+                keyPagesCount++;
+                const p = document.createElement('div');
+                p.className = `test-page paper-${paperFormat}`;
+                
+                const partLabel = keyPagesCount > 1 ? ` (${L["pr-part"]} ${keyPagesCount})` : '';
+
+                // Використовуємо <colgroup> для ідеально рівних колонок
+                let colGroup = `<colgroup><col style="width: 45px;">`;
+                for(let i=0; i<colsPerRow; i++) colGroup += `<col style="width: calc((100% - 45px) / ${colsPerRow});">`;
+                colGroup += `</colgroup>`;
+
+                p.innerHTML = `
+                    <div class="test-title ak-title" style="margin-bottom:5px;">${L["pr-key"]}${partLabel}</div>
+                    <div style="text-align:center; font-weight:bold; font-size:14pt; margin-bottom:20px; color:#555;">Test ID: ${batchId}</div>
+                    <table class="ak-table" style="table-layout: fixed; width: 100%; border-collapse: collapse;">
+                        ${colGroup}
+                        <tbody></tbody>
+                    </table>`;
+                container.appendChild(p);
+                return p;
+            }
+
+            currentKeyPage = createNewKeyPage();
+            currentKeyTableBody = currentKeyPage.querySelector('tbody');
+
+            // Ітеруємо по варіантах
+            masterKey.forEach((variant) => {
+                let addedRows = [];
+                // Скільки "поверхів" (блоків по 8 питань) нам треба
+                const blockCount = Math.ceil(totalQuestions / colsPerRow) || 1;
+
+                for (let b = 0; b < blockCount; b++) {
+                    let qStart = b * colsPerRow;
+                    let qEnd = Math.min(qStart + colsPerRow, totalQuestions);
+                    
+                    // Визначаємо, чи це останній поверх варіанту (щоб намалювати жирну лінію)
+                    const isLastBlock = (b === blockCount - 1);
+                    const borderBottomStyle = isLastBlock ? 'border-bottom: 2px solid #000;' : '';
+
+                    // ----------------------------------------
+                    // РЯДОК 1: Мікро-заголовки (Q1, Q2, Q3...)
+                    // ----------------------------------------
+                    const trHead = document.createElement('tr');
+                    trHead.style.background = "#f8fafc"; 
+                    let headHTML = '';
+                    
+                    if (b === 0) {
+                        // Клітинка з літерою варіанту (розтягується на всі блоки відповідей)
+                        headHTML += `<td rowspan="${blockCount * 2}" style="vertical-align: middle; background: #fff; text-align: center; border-bottom: 2px solid #000;"><b>${variant.v}</b></td>`;
+                    }
+                    
+                    for (let q = qStart; q < qEnd; q++) {
+                        headHTML += `<th style="font-size: 0.85rem; padding: 4px; color: #475569;">Q${q + 1}</th>`;
+                    }
+                    // Добиваємо порожні клітинки
+                    for (let q = qEnd; q < qStart + colsPerRow; q++) {
+                        headHTML += `<th></th>`;
+                    }
+                    trHead.innerHTML = headHTML;
+                    currentKeyTableBody.appendChild(trHead);
+                    addedRows.push(trHead);
+
+                    // ----------------------------------------
+                    // РЯДОК 2: Самі відповіді
+                    // ----------------------------------------
+                    const trAns = document.createElement('tr');
+                    let ansHTML = '';
+                    
+                    for (let q = qStart; q < qEnd; q++) {
+                        ansHTML += `<td style="padding: 6px 2px; font-size: 10pt; word-wrap: break-word; ${borderBottomStyle}">${variant.ans[q]}</td>`;
+                    }
+                    for (let q = qEnd; q < qStart + colsPerRow; q++) {
+                        ansHTML += `<td style="${borderBottomStyle}"></td>`;
+                    }
+                    trAns.innerHTML = ansHTML;
+                    currentKeyTableBody.appendChild(trAns);
+                    addedRows.push(trAns);
+                }
+
+                // =========================================
+                // ПЕРЕВІРКА ВИСОТИ ДЛЯ ПАГІНАЦІЇ
+                // =========================================
+                const lastRowRect = addedRows[addedRows.length - 1].getBoundingClientRect();
+                const pageRect = currentKeyPage.getBoundingClientRect();
+                
+                // Якщо варіант виліз за межі, переносимо його повністю на нову сторінку
+                if (lastRowRect.bottom > (pageRect.bottom - 40)) {
+                    addedRows.forEach(tr => currentKeyTableBody.removeChild(tr));
+                    currentKeyPage = createNewKeyPage();
+                    currentKeyTableBody = currentKeyPage.querySelector('tbody');
+                    addedRows.forEach(tr => currentKeyTableBody.appendChild(tr));
+                }
+            });
+
+            const summary = document.getElementById('generation-summary');
+            const totalPaper = (pagesPerVariant * variants) + keyPagesCount;
+            const pageWord = pagesPerVariant === 1 ? L["sum-page"] : L["sum-pages"];
+
+            summary.innerHTML = `
+                ✅ <b>${L["sum-success"]}</b><br>
+                <b>${pagesPerVariant}</b> ${pageWord} ${L["sum-per"]}<br>
+                ${L["sum-tot"]} <b>${totalPaper}</b> ${L["sum-sheets"]}
+            `;
+            summary.style.display = 'block';
+
+            isGenerated = true;
+        }
+
+        function handlePrint(btn) {
+            if (!isGenerated) {
+                btn.setAttribute('data-err-msg', dict[currentLang]["err-print"]);
+                btn.classList.add('error-hint');
+                setTimeout(() => { btn.classList.remove('error-hint'); }, 3000);
+                return;
+            }
+            const paywall = document.getElementById('premium-paywall');
+            if (paywall) paywall.open();
+        }
+    </script>
+    <edtech-paywall id="premium-paywall" buy-url="https://pay.твоя-платформа.com/pro"></edtech-paywall>
+</body>
+
+</html>
